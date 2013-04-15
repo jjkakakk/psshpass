@@ -1,0 +1,37 @@
+--- pssh	2012-02-03 03:13:09.000000000 +1100
++++ pssh.new	2013-04-15 15:11:47.779968355 +1000
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/python
+ # -*- Mode: python -*-
+ 
+ # Copyright (c) 2009-2012, Andrew McNabb
+@@ -69,9 +69,17 @@
+     else:
+         stdin = None
+     manager = Manager(opts)
+-    for host, port, user in hosts:
+-        cmd = ['ssh', host, '-o', 'NumberOfPasswordPrompts=1',
+-                '-o', 'SendEnv=PSSH_NODENUM PSSH_HOST']
++    # for host, port, user in hosts:
++    # cmd = ['ssh', host, '-o', 'NumberOfPasswordPrompts=1',
++    #        '-o', 'SendEnv=PSSH_NODENUM PSSH_HOST']
++    #
++    for host, port, user, passwd in hosts:
++        if passwd == None:
++            cmd = ['ssh', host, '-o', 'NumberOfPasswordPrompts=1', '-o', 'SendEnv=PSSH_NODENUM PSSH_HOST']
++        else:
++            passwd="'"+passwd+"'"
++            cmd = ['sshpass', '-p', passwd, 'ssh', host, '-o', 'NumberOfPasswordPrompts=1', '-o', 'SendEnv=\'PSSH_NODENUM PSSH_HOST\'']
++
+         if opts.options:
+             for opt in opts.options:
+                 cmd += ['-o', opt]
+@@ -83,6 +91,7 @@
+             cmd.extend(opts.extra)
+         if cmdline:
+             cmd.append(cmdline)
++        #print( "jjk cmd: %s" % cmd )
+         t = Task(host, port, user, cmd, opts, stdin)
+         manager.add_task(t)
+     try:

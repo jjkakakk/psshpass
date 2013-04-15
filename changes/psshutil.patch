@@ -1,0 +1,82 @@
+--- psshutil.py	2012-02-03 03:13:09.000000000 +1100
++++ psshutilnew.py	2013-04-15 15:10:10.066633688 +1000
+@@ -5,7 +5,7 @@
+ import string
+ import sys
+ 
+-HOST_FORMAT = 'Host format is [user@]host[:port] [user]'
++HOST_FORMAT = 'Host format is [user[:passwd]@]host[:port] [user]'
+ 
+ 
+ def read_host_files(paths, default_user=None, default_port=None):
+@@ -38,9 +38,9 @@
+         line = line.strip()
+         if not line or line.startswith('#'):
+             continue
+-        host, port, user = parse_host_entry(line, default_user, default_port)
++        host, port, user, passwd = parse_host_entry(line, default_user, default_port)
+         if host:
+-            hosts.append((host, port, user))
++            hosts.append((host, port, user, passwd))
+     return hosts
+ 
+ 
+@@ -54,13 +54,15 @@
+ 
+     Returns a (host, port, user) triple.
+     """
+-    fields = line.split()
+-    if len(fields) > 2:
+-        sys.stderr.write('Bad line: "%s". Format should be'
+-                ' [user@]host[:port] [user]\n' % line)
++    fields = line.split(":SEP:")
++    if len(fields) != 4:
++        sys.stderr.write('Bad line1: "%s". Format should be'
++                ' user:SEP:passwd:SEP:host:SEP:port\n' % line)
+         return None, None, None
+     host_field = fields[0]
+-    host, port, user = parse_host(host_field, default_port=default_port)
++    host_field = line
++    host, port, user, passwd = parse_host(host_field, default_port=default_port)
++    #print( "jkdebug: host %s, port %s, user %s, passwd %s\n" % ( host, port, user, passwd ) )
+     if len(fields) == 2:
+         if user is None:
+             user = fields[1]
+@@ -69,7 +71,7 @@
+             return None, None, None
+     if user is None:
+         user = default_user
+-    return host, port, user
++    return host, port, user, passwd
+ 
+ 
+ def parse_host_string(host_string, default_user=None, default_port=None):
+@@ -85,18 +87,22 @@
+ 
+ 
+ def parse_host(host, default_user=None, default_port=None):
+-    """Parses host entries of the form "[user@]host[:port]".
++    """Parses host entries of the form "user:SEP:passwd:SEP:host:SEP:port".
+ 
+     Returns a (host, port, user) triple.
+     """
+     # TODO: when we stop supporting Python 2.4, switch to using str.partition.
+     user = default_user
+     port = default_port
+-    if '@' in host:
+-        user, host = host.split('@', 1)
+-    if ':' in host:
+-        host, port = host.rsplit(':', 1)
+-    return (host, port, user)
++    if ':SEP:' in host:
++        user, host = host.split(':SEP:', 1)
++    if ':SEP:' in host:
++        host, port = host.rsplit(':SEP:', 1)
++    passwd = None
++    if ":SEP:" in host:
++        passwd, host = host.split(':SEP:')
++    passwd = passwd.replace( ":SPACE:", " " )
++    return (host, port, user, passwd)
+ 
+ 
+ def set_cloexec(filelike):
